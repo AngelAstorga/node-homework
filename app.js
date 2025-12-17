@@ -8,7 +8,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/testpost", (req, res) => {
-  res.status(201);
+  res.status(200);
   res.send("test");
 });
 app.use(notFoundHandler);
