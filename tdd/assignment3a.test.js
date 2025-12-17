@@ -7,7 +7,10 @@ let user2 = null;
 let saveRes = null;
 let saveData = null;
 
-const { storedUsers, setLoggedOnUser } = require("../util/memoryStore.js")
+const {
+  storedUsers,
+  setLoggedOnUser,
+} = require("../week-3-middleware/memoryStore.js");
 
 beforeAll(async () => {
   user1 = {
@@ -45,7 +48,7 @@ describe("testing logon, register, and logoff", () => {
       body: { email: "jim@sample.com", password: "Pa$$word20" },
     });
     saveRes = httpMocks.createResponse();
-    await logon(req, saveRes); 
+    await logon(req, saveRes);
     expect(saveRes.statusCode).toBe(200); // success!
   });
 
