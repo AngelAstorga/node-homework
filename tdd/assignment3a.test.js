@@ -10,21 +10,6 @@ const {
   setLoggedOnUser,
 } = require("../week-3-middleware/memoryStore.js");
 
-beforeAll(async () => {
-  user1 = {
-    email: "bob@sample.com",
-    password: "Pa$$word20",
-    name: "Bob",
-  };
-  user2 = {
-    email: "alice@sample.com",
-    password: "Pa$$word20",
-    name: "Alice",
-  };
-  storedUsers.push(user1);
-  storedUsers.push(user2);
-  setLoggedOnUser(user1);
-});
 global.users = [];
 global.user_id = null;
 
