@@ -2,8 +2,6 @@ const httpMocks = require("node-mocks-http");
 const { logon, register, logoff } = require("../controllers/userController");
 
 // a few useful globals
-let user1 = null;
-let user2 = null;
 let saveRes = null;
 let saveData = null;
 
@@ -27,6 +25,8 @@ beforeAll(async () => {
   storedUsers.push(user2);
   setLoggedOnUser(user1);
 });
+global.users = [];
+global.user_id = null;
 
 describe("testing logon, register, and logoff", () => {
   it("You can register a user.", async () => {
@@ -54,7 +54,7 @@ describe("testing logon, register, and logoff", () => {
 
   it("returns the expected name.", () => {
     saveData = saveRes._getJSONData();
-    expect(saveData.user.name).toBe("Jim");
+    expect(saveData.name).toBe("Jim");
   });
   it("A logon attempt with a bad password returns a 401", async () => {
     const req = httpMocks.createRequest({
