@@ -14,6 +14,7 @@ const {
 router.use((req, res, next) => {
   const requestId = uuidv4();
   req.requestId = requestId;
+  res.setHeader("X-Request-Id", requestId);
   next();
 });
 //2. Logging middleware
@@ -76,15 +77,20 @@ router.use((err, req, res, next) => {
   if (statusCode >= 400 && statusCode < 500) {
     // 4xx errors: client errors (use console.warn)
     // This includes ValidationError (400), UnauthorizedError (401), NotFoundError (404)
-    console.warn(`WARN: ${err.name}`, err.message);
+    console.warn(`WARN: ${err.name} ${err.message}`);
   } else {
     // 5xx errors: server errors (use console.error)
-    console.error(`ERROR: Error`, err.message);
+    console.error(`ERROR: Error ${err.message}`);
   }
+
+  const errorMessage =
+    statusCode === 500
+      ? "Internal Server Error"
+      : err.message || "Internal Server Error";
 
   // Send error response
   res.status(statusCode).json({
-    error: err.message || "Internal Server Error",
+    error: errorMessage || "Internal Server Error",
     requestId: req.requestId,
   });
 });
@@ -92,7 +98,7 @@ router.use((err, req, res, next) => {
 
 router.use((req, res, next) => {
   res.status(StatusCodes.NOT_FOUND).json({
-    error: "Route Not Found",
+    error: "Route not found",
     path: req.originalUrl,
     requestId: req.requestId,
   });

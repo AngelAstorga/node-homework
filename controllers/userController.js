@@ -10,7 +10,8 @@ function register(req, res) {
   delete req.body.password;
   res.status(StatusCodes.CREATED).json({
     message: "everything worked.",
-    user: { name: newUser.name, email: newUser.email },
+    name: newUser.name,
+    email: newUser.email,
   });
 }
 
@@ -23,7 +24,8 @@ function logon(req, res) {
       memoryStore.user_id = user;
       res.status(StatusCodes.OK).json({
         message: "everything worked.",
-        user: { name: user.name, email: user.email },
+        name: user.name,
+        email: user.email,
       });
     } else {
       res
