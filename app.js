@@ -1,8 +1,11 @@
 const express = require("express");
 const errorHandler = require("./middleware/error-handler");
 const notFoundHandler = require("./middleware/not-found");
+const authMiddleware = require("./middleware/auth");
+const taskRouter = require("./week-3-middleware/routes/taskRouters");
 const app = express();
 
+app.use("/api/tasks", authMiddleware, taskRouter);
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
