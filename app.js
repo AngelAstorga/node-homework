@@ -1,25 +1,21 @@
 const express = require("express");
+const { v4: uuidv4 } = require("uuid");
+const path = require("path");
 const errorHandler = require("./middleware/error-handler");
 const notFoundHandler = require("./middleware/not-found");
+const authMiddleware = require("./middleware/auth");
+const userRouter = require("./routes/userRouters");
+const taskRouter = require("./routes/taskRouters");
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("Hello, World!");
-});
-
-app.post("/testpost", (req, res) => {
-  res.status(200);
-  res.send("test");
-});
-app.use(notFoundHandler);
-app.use(errorHandler);
+global.user_id = null;
+global.users = [];
+global.tasks = [];
 
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () =>
   console.log(`Server is listening on port ${port}...`)
 );
-
-module.exports = { app, server };
 
 server.on("error", (err) => {
   if (err.code === "EADDRINUSE") {
@@ -58,3 +54,13 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection:", reason);
   shutdown(1);
 });
+
+app.use(express.json({ limit: "1kb" }));
+
+app.use("/api/tasks", authMiddleware, taskRouter);
+app.use("/api/users", userRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+module.exports = { app, server };
