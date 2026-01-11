@@ -1,4 +1,3 @@
-const memoryStore = require("../week-3-middleware/memoryStore");
 const { StatusCodes } = require("http-status-codes");
 const { userSchema } = require("./../validation/userSchema");
 
@@ -33,8 +32,8 @@ async function register(req, res) {
   }
   newUser = value;
   newUser.password = await hashPassword(newUser.password);
-  memoryStore.storedUsers.push(newUser);
-  memoryStore.user_id = newUser; // After the registration step, the user is set to logged on.
+  global.users.push(newUser);
+  global.user_id = newUser; // After the registration step, the user is set to logged on.
   delete req.body.password;
   res.status(StatusCodes.CREATED).json({
     message: "everything worked.",
@@ -44,13 +43,13 @@ async function register(req, res) {
 }
 
 async function logon(req, res) {
-  const user = memoryStore.storedUsers.find((e) => {
+  const user = global.users.find((e) => {
     return e.email == req.body.email;
   });
   if (user) {
     const isMatch = await comparePassword(req.body.password, user.password);
     if (isMatch) {
-      memoryStore.user_id = user;
+      global.user_id = user;
       res.status(StatusCodes.OK).json({
         message: "everything worked.",
         name: user.name,
@@ -69,7 +68,7 @@ async function logon(req, res) {
 }
 
 function logoff(req, res) {
-  memoryStore.user_id = null;
+  global.user_id = null;
   res.sendStatus(StatusCodes.OK);
 }
 

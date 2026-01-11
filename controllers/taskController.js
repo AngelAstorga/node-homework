@@ -1,4 +1,3 @@
-const memoryStore = require("./../week-3-middleware/memoryStore");
 const { taskSchema, patchTaskSchema } = require("./../validation/taskSchema");
 const { StatusCodes } = require("http-status-codes");
 const taskCounter = (() => {
@@ -21,16 +20,16 @@ function create(req, res) {
     isCompleted: false,
     ...value,
     id: taskCounter(),
-    userId: memoryStore.user_id.email,
+    userId: global.user_id.email,
   };
-  memoryStore.tasks.push(newTask);
+  global.tasks.push(newTask);
   const { userId, ...sanitizedTask } = newTask;
   // we don't send back the userId! This statement removes it.
   res.status(StatusCodes.CREATED).json(sanitizedTask);
 }
 function index(req, res) {
-  const userTasks = memoryStore.tasks.filter(
-    (task) => task.userId === memoryStore.user_id.email
+  const userTasks = global.tasks.filter(
+    (task) => task.userId === global.user_id.email
   );
   if (userTasks.length > 0) {
     const sanitizedTasks = userTasks.map((task) => {
@@ -43,7 +42,7 @@ function index(req, res) {
   }
 }
 function show(req, res) {
-  const task = memoryStore.tasks.filter((task) => {
+  const task = global.tasks.filter((task) => {
     return parseInt(req.params.id) == task.id;
   });
 
@@ -63,10 +62,9 @@ function update(req, res) {
       message: error.message,
     });
   }
-  const task = memoryStore.tasks.find((task) => {
+  const task = global.tasks.find((task) => {
     return (
-      parseInt(req.params.id) == task.id &&
-      task.userId === memoryStore.user_id.email
+      parseInt(req.params.id) == task.id && task.userId === global.user_id.email
     );
   });
   if (task) {
@@ -85,9 +83,8 @@ function deleteTask(req, res) {
       .status(400)
       .json({ message: "The task ID passed is not valid." });
   }
-  const taskIndex = memoryStore.tasks.findIndex(
-    (task) =>
-      task.id === taskToFind && task.userId === memoryStore.user_id.email
+  const taskIndex = global.tasks.findIndex(
+    (task) => task.id === taskToFind && task.userId === global.user_id.email
   );
   // we get the index, not the task, so that we can splice it out
   if (taskIndex === -1) {
@@ -97,8 +94,8 @@ function deleteTask(req, res) {
       .json({ message: "That task was not found" });
     // else it's a 404.
   }
-  const { userId, ...task } = memoryStore.tasks[taskIndex]; // make a copy without userId
-  memoryStore.tasks.splice(taskIndex, 1); // do the delete
+  const { userId, ...task } = global.tasks[taskIndex]; // make a copy without userId
+  global.tasks.splice(taskIndex, 1); // do the delete
   return res.json(task);
 }
 
