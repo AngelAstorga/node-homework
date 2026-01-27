@@ -17,22 +17,37 @@ let saveRes = null;
 let saveData = null;
 let saveTaskId = null;
 
+// describe("test that database and tables exist", () => {
+//   it("connects to database", async () => {
+//     let databaseExists = true;
+//     try {
+//       await pool.query("SELECT 1;");
+//     } catch (err) {
+//       console.log("Error: the test database hasn't been created.");
+//       databaseExists = false;
+//     }
+//     expect(databaseExists).toBe(true);
+//   });
+//   it("clears the tasks table", async () => {
+//     expect(async () => await pool.query("DELETE FROM tasks;")).not.toThrow();
+//   });
+//   it("clears the users table", async () => {
+//     expect(async () => await pool.query("DELETE FROM users;")).not.toThrow();
+//   });
+// });
+
 describe("test that database and tables exist", () => {
   it("connects to database", async () => {
-    let databaseExists = true;
-    try {
-      await pool.query("SELECT 1;");
-    } catch (err) {
-      console.log("Error: the test database hasn't been created.");
-      databaseExists = false;
-    }
-    expect(databaseExists).toBe(true);
+    // Await directo, sin envoltorios extraños
+    await pool.query("SELECT 1;");
   });
+
   it("clears the tasks table", async () => {
-    expect(async () => await pool.query("DELETE FROM tasks;")).not.toThrow();
+    await pool.query("TRUNCATE tasks RESTART IDENTITY CASCADE;");
   });
+
   it("clears the users table", async () => {
-    expect(async () => await pool.query("DELETE FROM users;")).not.toThrow();
+    await pool.query("TRUNCATE users RESTART IDENTITY CASCADE;");
   });
 });
 
