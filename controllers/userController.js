@@ -2,6 +2,7 @@ const { StatusCodes } = require("http-status-codes");
 const { userSchema } = require("./../validation/userSchema");
 
 const pool = require("./../db/pg-pool");
+const prisma = require("./../db/prisma");
 
 const crypto = require("crypto");
 const util = require("util");
@@ -21,10 +22,8 @@ async function comparePassword(inputPassword, storedHash) {
 }
 
 async function register(req, res, next) {
-  console.log("EJECUTANDO DESDE EL ARCHIVO CORRECTO - RUTA:", __filename);
+  let user = null;
 
-  const requestId = Math.random();
-  console.log("Register called. Request ID:", requestId);
   // Your middleware here
   let newUser = { ...req.body }; // this makes a copy
   const { error, value } = userSchema.validate(newUser, { abortEarly: false });
@@ -38,45 +37,51 @@ async function register(req, res, next) {
   newUser = value;
   newUser.password = await hashPassword(newUser.password);
   try {
-    const savedUser = await pool.query(
-      `INSERT INTO users (email, name, hashed_password) 
-      VALUES ($1, $2, $3) RETURNING id, email, name`,
-      [newUser.email, newUser.name, newUser.password],
-    ); // note that you use a parameterized query
+    user = await prisma.user.create({
+      data: {
+        name: newUser.name,
+        email: newUser.email,
+        hashedPassword: newUser.password,
+      },
+      select: { name: true, email: true, id: true }, // specify the column values to return
+    });
 
-    global.user_id = savedUser.rows[0].id; // After the registration step, the user is set to logged on.
+    global.user_id = user.id; // After the registration step, the user is set to logged on.
     delete req.body.password;
     res.status(201).json({
       message: "everything worked.",
-      name: savedUser.rows[0].name,
-      email: savedUser.rows[0].email,
+      name: user.name,
+      email: user.email,
     });
-  } catch (e) {
-    // the email might already be registered
-    if (e.code === "23505") {
-      // this means the unique constraint for email was violated
-      // here you return the 400 and the error message.  Use a return statement, so that
-      // you don't keep going in this function
-      return res.status(400).json({ message: e.message });
+  } catch (err) {
+    if (err.name === "PrismaClientKnownRequestError" && err.code === "P2002") {
+      // send the appropriate error back -- the email was already registered
+      return res
+        .status(400)
+        .json({ message: "The email is already registered." });
+    } else {
+      return next(err); // the error handler takes care of other errors
     }
-    return next(e);
   }
 }
 
 async function logon(req, res) {
-  const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-    req.body.email,
-  ]);
+  const user = await prisma.user.findUnique({
+    where: { email: req.body.email },
+  });
 
-  if (!result.rows.length) {
+  // const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+  //   req.body.email,
+  // ]);
+
+  if (!user) {
     return res.status(401).json({ message: "Authentication Failed" });
   }
-  const user = result.rows[0];
   console.log(user);
   if (user) {
     const isMatch = await comparePassword(
       req.body.password,
-      user.hashed_password,
+      user.hashedPassword,
     );
     if (isMatch) {
       global.user_id = user.id;
