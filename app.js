@@ -6,6 +6,7 @@ const notFoundHandler = require("./middleware/not-found");
 const authMiddleware = require("./middleware/auth");
 const userRouter = require("./routes/userRouters");
 const taskRouter = require("./routes/taskRouters");
+const analyticsRouter = require("./routes/analyticsRouters");
 const app = express();
 const pool = require("./db/pg-pool");
 const prisma = require("./db/prisma");
@@ -74,7 +75,8 @@ app.get("/health", async (req, res) => {
 });
 
 app.use("/api/tasks", authMiddleware, taskRouter);
-app.use("/api/users", userRouter);
+app.use("/api/users", authMiddleware, userRouter);
+app.use("/api/analytics", authMiddleware, analyticsRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
