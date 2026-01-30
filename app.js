@@ -15,6 +15,26 @@ global.user_id = null;
 global.users = [];
 global.tasks = [];
 
+app.use(express.json({ limit: "1kb" }));
+
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", db: "connected" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ status: "error", db: "not connected", error: err.message });
+  }
+});
+
+app.use("/api/tasks", authMiddleware, taskRouter);
+app.use("/api/users", authMiddleware, userRouter);
+app.use("/api/analytics", authMiddleware, analyticsRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () =>
   console.log(`Server is listening on port ${port}...`),
@@ -60,25 +80,5 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection:", reason);
   shutdown(1);
 });
-
-app.use(express.json({ limit: "1kb" }));
-
-app.get("/health", async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", db: "connected" });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ status: "error", db: "not connected", error: err.message });
-  }
-});
-
-app.use("/api/tasks", authMiddleware, taskRouter);
-app.use("/api/users", authMiddleware, userRouter);
-app.use("/api/analytics", authMiddleware, analyticsRouter);
-
-app.use(notFoundHandler);
-app.use(errorHandler);
 
 module.exports = { app, server };
