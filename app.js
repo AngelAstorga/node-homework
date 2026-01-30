@@ -1,9 +1,8 @@
 const express = require("express");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID: uuidv4 } = require("crypto");
 const path = require("path");
 const errorHandler = require("./middleware/error-handler");
 const notFoundHandler = require("./middleware/not-found");
-const authMiddleware = require("./middleware/auth");
 const userRouter = require("./routes/userRouters");
 const taskRouter = require("./routes/taskRouters");
 const analyticsRouter = require("./routes/analyticsRouters");
@@ -14,6 +13,42 @@ const prisma = require("./db/prisma");
 global.user_id = null;
 global.users = [];
 global.tasks = [];
+
+app.set("trust proxy", 1);
+const helmet = require("helmet");
+const { xss } = require("express-xss-sanitizer");
+const rateLimiter = require("express-rate-limit");
+
+app.use(
+  rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+  }),
+);
+app.use(helmet());
+
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
+app.use(express.json({ limit: "1kb" }));
+app.use(xss());
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", db: "connected" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ status: "error", db: "not connected", error: err.message });
+  }
+});
+
+app.use("/api/tasks", taskRouter);
+app.use("/api/users", userRouter);
+app.use("/api/analytics", analyticsRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () =>
@@ -60,25 +95,5 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection:", reason);
   shutdown(1);
 });
-
-app.use(express.json({ limit: "1kb" }));
-
-app.get("/health", async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", db: "connected" });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ status: "error", db: "not connected", error: err.message });
-  }
-});
-
-app.use("/api/tasks", authMiddleware, taskRouter);
-app.use("/api/users", authMiddleware, userRouter);
-app.use("/api/analytics", authMiddleware, analyticsRouter);
-
-app.use(notFoundHandler);
-app.use(errorHandler);
 
 module.exports = { app, server };

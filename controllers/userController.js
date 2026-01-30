@@ -8,6 +8,27 @@ const crypto = require("crypto");
 const util = require("util");
 const scrypt = util.promisify(crypto.scrypt);
 
+//Security
+const { randomUUID } = require("crypto");
+const jwt = require("jsonwebtoken");
+
+const cookieFlags = (req) => {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // only when HTTPS is available
+    sameSite: "Strict",
+  };
+};
+
+const setJwtCookie = (req, res, user) => {
+  // Sign JWT
+  const payload = { id: user.id, csrfToken: randomUUID() };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }); // 1 hour expiration
+  // Set cookie.  Note that the cookie flags have to be different in production and in test.
+  res.cookie("jwt", token, { ...cookieFlags(req), maxAge: 3600000 }); // 1 hour expiration
+  return payload.csrfToken; // this is needed in the body returned by logon() or register()
+};
+
 async function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
   const derivedKey = await scrypt(password, salt, 64);
@@ -82,7 +103,11 @@ async function register(req, res, next) {
     });
 
     // Store the user ID globally for session management (not secure for production)
-    global.user_id = result.user.id;
+    // global.user_id = result.user.id;
+
+    const csrfToken = setJwtCookie(req, res, result.user);
+
+    result.user.csrfToken = csrfToken;
 
     // Send response with status 201
     res.status(201);
@@ -90,6 +115,7 @@ async function register(req, res, next) {
       user: result.user,
       welcomeTasks: result.welcomeTasks,
       transactionStatus: "success",
+      csrfToken,
     });
     return;
   } catch (err) {
@@ -110,18 +136,23 @@ async function logon(req, res) {
   if (!user) {
     return res.status(401).json({ message: "Authentication Failed" });
   }
-  console.log(user);
   if (user) {
     const isMatch = await comparePassword(
       req.body.password,
       user.hashedPassword,
     );
     if (isMatch) {
-      global.user_id = user.id;
+      // global.user_id = user.id;
+      console.log(user.id);
+      const csrfToken = setJwtCookie(req, res, user);
+      user.csrfToken = csrfToken;
+      console.log("##################");
+      console.log(csrfToken);
       res.status(StatusCodes.OK).json({
         message: "everything worked.",
         name: user.name,
         email: user.email,
+        csrfToken: user.csrfToken,
       });
     } else {
       res
@@ -136,7 +167,7 @@ async function logon(req, res) {
 }
 
 function logoff(req, res) {
-  global.user_id = null;
+  res.clearCookie("jwt", cookieFlags(req));
   res.sendStatus(StatusCodes.OK);
 }
 
