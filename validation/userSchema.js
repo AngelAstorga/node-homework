@@ -13,5 +13,14 @@ const userSchema = Joi.object({
         "Password must be at least 8 characters long and include upper and lower case letters, a number, and a special character.",
     }),
 });
+const paginationSchema = Joi.object({
+  page: Joi.number().min(1).default(1).messages({
+    "number.min": "The page number must be at least 1.",
+    "number.base": "The page must be a valid number.",
+  }),
+  limit: Joi.number().min(1).max(100).default(10).messages({
+    "number.max": "You cannot request more than 100 items at a time.",
+  }),
+});
 
-module.exports = { userSchema };
+module.exports = { userSchema, paginationSchema };
