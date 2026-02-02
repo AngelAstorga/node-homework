@@ -22,7 +22,7 @@ async function create(req, res) {
   const newTask = {
     isCompleted: false,
     ...value,
-    userId: global.user_id,
+    userId: req.user.id,
   };
 
   console.log(newTask);
@@ -51,7 +51,7 @@ async function index(req, res) {
   const limit = parseInt(value.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const whereClause = { userId: global.user_id };
+  const whereClause = { userId: req.user.id };
   const { isCompleted, find, min_date, max_date, priority } = value;
 
   if (find) {
@@ -180,7 +180,7 @@ async function update(req, res, next) {
       where: {
         id_userId: {
           id: parseInt(req.params.id),
-          userId: parseInt(global.user_id),
+          userId: parseInt(req.user.id),
         },
       },
       select: { title: true, isCompleted: true, id: true, priority: true },
@@ -208,7 +208,7 @@ async function deleteTask(req, res, next) {
       where: {
         id_userId: {
           id: parseInt(req.params.id),
-          userId: parseInt(global.user_id),
+          userId: parseInt(req.user.id),
         },
       },
       select: { title: true, isCompleted: true, priority: true, id: true },
@@ -247,7 +247,7 @@ async function bulkCreate(req, res, next) {
       title: value.title,
       isCompleted: value.isCompleted || false,
       priority: value.priority || "medium",
-      userId: global.user_id,
+      userId: req.user.id,
     });
   }
 
