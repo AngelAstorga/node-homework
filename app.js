@@ -10,7 +10,6 @@ const app = express();
 const pool = require("./db/pg-pool");
 const prisma = require("./db/prisma");
 
-global.user_id = null;
 global.users = [];
 global.tasks = [];
 
@@ -28,7 +27,7 @@ app.use(
 app.use(helmet());
 
 const cookieParser = require("cookie-parser");
-app.use(cookieParser());
+app.use(cookieParser(process.env.JWT_SECRET));
 
 app.use(express.json({ limit: "1kb" }));
 app.use(xss());

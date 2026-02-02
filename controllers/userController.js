@@ -102,9 +102,6 @@ async function register(req, res, next) {
       return { user: newUserResult, welcomeTasks };
     });
 
-    // Store the user ID globally for session management (not secure for production)
-    // global.user_id = result.user.id;
-
     const csrfToken = setJwtCookie(req, res, result.user);
 
     result.user.csrfToken = csrfToken;
@@ -142,7 +139,6 @@ async function logon(req, res) {
       user.hashedPassword,
     );
     if (isMatch) {
-      // global.user_id = user.id;
       console.log(user.id);
       const csrfToken = setJwtCookie(req, res, user);
       user.csrfToken = csrfToken;
