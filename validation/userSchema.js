@@ -1,5 +1,7 @@
 const Joi = require("joi");
 
+console.log("¡ESTOY CARGANDO EL ESQUEMA CORRECTO!");
+
 const userSchema = Joi.object({
   email: Joi.string().trim().lowercase().email().required(),
   name: Joi.string().trim().min(3).max(30).required(),
