@@ -1,7 +1,6 @@
 const { taskSchema, patchTaskSchema } = require("./../validation/taskSchema");
 const { StatusCodes } = require("http-status-codes");
 const { paginationSchema } = require("../validation/userSchema");
-const pool = require("./../db/pg-pool");
 const prisma = require("./../db/prisma");
 const taskCounter = (() => {
   let lastTaskNumber = 0;
