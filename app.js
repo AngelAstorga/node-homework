@@ -29,7 +29,7 @@ app.use(helmet());
 const cookieParser = require("cookie-parser");
 app.use(cookieParser(process.env.JWT_SECRET));
 
-app.use(express.json({ limit: "1kb" }));
+app.use(express.json({ limit: "1mb" }));
 app.use(xss());
 app.get("/health", async (req, res) => {
   try {
