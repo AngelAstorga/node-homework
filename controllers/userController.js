@@ -166,11 +166,13 @@ async function logon(req, res) {
   if (!user) {
     return res.status(401).json({ message: "Authentication Failed" });
   }
+  console.log("hay email");
   if (user) {
     const isMatch = await comparePassword(
       req.body.password,
       user.hashedPassword,
     );
+    console.log("hay match");
     if (isMatch) {
       console.log(user.id);
       const csrfToken = setJwtCookie(req, res, user);
