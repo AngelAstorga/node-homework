@@ -7,7 +7,6 @@ const userRouter = require("./routes/userRouters");
 const taskRouter = require("./routes/taskRouters");
 const analyticsRouter = require("./routes/analyticsRouters");
 const app = express();
-const pool = require("./db/pg-pool");
 const prisma = require("./db/prisma");
 
 global.users = [];
@@ -29,7 +28,7 @@ app.use(helmet());
 const cookieParser = require("cookie-parser");
 app.use(cookieParser(process.env.JWT_SECRET));
 
-app.use(express.json({ limit: "1kb" }));
+app.use(express.json({ limit: "1mb" }));
 app.use(xss());
 app.get("/health", async (req, res) => {
   try {
@@ -72,7 +71,6 @@ async function shutdown(code = 0) {
     await new Promise((resolve) => server.close(resolve));
     console.log("HTTP server closed.");
     // If you have DB connections, close them here
-    await pool.end();
     await prisma.$disconnect();
     console.log("Prisma disconnected");
   } catch (err) {

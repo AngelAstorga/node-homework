@@ -1,7 +1,6 @@
 const { taskSchema, patchTaskSchema } = require("./../validation/taskSchema");
 const { StatusCodes } = require("http-status-codes");
 const { paginationSchema } = require("../validation/userSchema");
-const pool = require("./../db/pg-pool");
 const prisma = require("./../db/prisma");
 const taskCounter = (() => {
   let lastTaskNumber = 0;
@@ -41,7 +40,8 @@ async function create(req, res) {
 }
 
 async function index(req, res) {
-  const { error, value } = paginationSchema.validate(req.query);
+  const limitPage = { limit: req.query.limit, page: req.query.page };
+  const { error, value } = paginationSchema.validate(limitPage);
 
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
@@ -52,11 +52,11 @@ async function index(req, res) {
   const skip = (page - 1) * limit;
 
   const whereClause = { userId: req.user.id };
-  const { isCompleted, find, min_date, max_date, priority } = value;
+  const { isCompleted, find, min_date, max_date, priority } = req.query;
 
   if (find) {
     whereClause.title = {
-      contains: value.find,
+      contains: find,
       mode: "insensitive",
     };
   }
