@@ -40,7 +40,8 @@ async function create(req, res) {
 }
 
 async function index(req, res) {
-  const { error, value } = paginationSchema.validate(req.query);
+  const limitPage = { limit: req.query.limit, page: req.query.page };
+  const { error, value } = paginationSchema.validate(limitPage);
 
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
