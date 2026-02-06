@@ -126,6 +126,7 @@ async function show(req, res) {
   const userTask = await prisma.task.findUnique({
     where: {
       id: taskId,
+      userId: req.user.id,
     },
     select: {
       id: true,
