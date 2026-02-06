@@ -40,23 +40,23 @@ async function create(req, res) {
 }
 
 async function index(req, res) {
-  const limitPage = { limit: req.query.limit, page: req.query.page };
-  const { error, value } = paginationSchema.validate(limitPage);
+  let limitPage = { limit: req.query.limit, page: req.query.page };
+  const { error, limitPageValidated } = paginationSchema.validate(limitPage);
 
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
 
-  const page = parseInt(value.page) || 1;
-  const limit = parseInt(value.limit) || 10;
+  const page = parseInt(limitPageValidated.page) || 1;
+  const limit = parseInt(limitPageValidated.limit) || 10;
   const skip = (page - 1) * limit;
 
   const whereClause = { userId: req.user.id };
-  const { isCompleted, find, min_date, max_date, priority } = value;
+  const { isCompleted, find, min_date, max_date, priority } = req.query;
 
   if (find) {
     whereClause.title = {
-      contains: value.find,
+      contains: find,
       mode: "insensitive",
     };
   }
