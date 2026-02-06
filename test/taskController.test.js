@@ -165,7 +165,8 @@ it("28. User1 can set the task corresponding to saveTaskId to isCompleted: true.
   req.params = { id: saveTaskId.toString() };
   saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
   await waitForRouteHandlerCompletion(update, req, saveRes);
-  expect(saveRes.isCompleted).toBe(true);
+  const data = saveRes._getJSONData();
+  expect(data.isCompleted).toBe(true);
 });
 it("29. User2 can't do this.", async () => {
   const req = httpMocks.createRequest({
