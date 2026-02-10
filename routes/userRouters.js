@@ -1,6 +1,7 @@
 const {
   register,
   logon,
+  googleLogon,
   logoff,
   show,
 } = require("./../controllers/userController");
@@ -9,6 +10,7 @@ const jwtMiddleware = require("./../middleware/jwtMiddleware");
 const express = require("express");
 const router = express.Router();
 router.route("/logon").post(logon);
+router.route("/googleLogon").post(googleLogon);
 router.route("/").post(register);
 router.route("/register").post(register);
 router.use(jwtMiddleware);
