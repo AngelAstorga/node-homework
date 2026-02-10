@@ -223,7 +223,7 @@ async function googleLogon(req, res) {
 
     let newUser = { name, email, password: sub };
 
-    newUser.password += "AAA7%";
+    newUser.password += "Pepito7%";
 
     const { error, value } = userSchema.validate(newUser, {
       abortEarly: false,
