@@ -223,6 +223,8 @@ async function googleLogon(req, res) {
 
     let newUser = { name, email, password: sub };
 
+    newUser.password += "AAA7%";
+
     const { error, value } = userSchema.validate(newUser, {
       abortEarly: false,
     });
@@ -235,7 +237,7 @@ async function googleLogon(req, res) {
     }
     newUser = value;
     newUser.password = await hashPassword(newUser.password);
-    newUser.password += "AAA7%";
+
     // 1. Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
