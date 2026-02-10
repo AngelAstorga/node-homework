@@ -10,7 +10,7 @@ const scrypt = util.promisify(crypto.scrypt);
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  "http://localhost:3001", // Must match the frontend 'auth-code' flow
+  "postmessage", // Must match the frontend 'auth-code' flow
 );
 
 //Security
@@ -21,7 +21,7 @@ const cookieFlags = (req) => {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // only when HTTPS is available
-    sameSite: "Strict",
+    sameSite: "Lax",
   };
 };
 
