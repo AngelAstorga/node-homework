@@ -1,1 +1,4 @@
 https://node-homework-777.onrender.com
+
+I added the route /updateMany, So you can send an array of tasks to be updated. to use it you have to send a json like: {"data":[{"id": .., "title": ..},{"id": .., "title": ..}]}
+You can logging using your google email. 
