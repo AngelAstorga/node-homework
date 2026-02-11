@@ -14,4 +14,15 @@ const patchTaskSchema = Joi.object({
   .min(1)
   .message("No attributes to change were specified.");
 
-module.exports = { taskSchema, patchTaskSchema };
+const patchTaskSchemaId = Joi.object({
+  id: Joi.number().integer().required(),
+  title: Joi.string().trim().min(3).max(30).not(null),
+  isCompleted: Joi.boolean().not(null),
+  priority: Joi.string().valid("low", "medium", "high").not(null),
+})
+  .min(1)
+  .message("No attributes to change were specified.");
+
+const arrayTaskSchema = Joi.array().items(patchTaskSchemaId).min(1);
+
+module.exports = { taskSchema, patchTaskSchema, arrayTaskSchema };

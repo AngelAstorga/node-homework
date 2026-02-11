@@ -1,11 +1,17 @@
 const { StatusCodes } = require("http-status-codes");
 const { userSchema } = require("./../validation/userSchema");
-
+const { OAuth2Client } = require("google-auth-library");
 const prisma = require("./../db/prisma");
 
 const crypto = require("crypto");
 const util = require("util");
 const scrypt = util.promisify(crypto.scrypt);
+// google OAuth
+const client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "postmessage", // Must match the frontend 'auth-code' flow
+);
 
 //Security
 const { randomUUID } = require("crypto");
@@ -15,7 +21,7 @@ const cookieFlags = (req) => {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // only when HTTPS is available
-    sameSite: "Strict",
+    sameSite: "Lax",
   };
 };
 
@@ -200,6 +206,99 @@ function logoff(req, res) {
   res.sendStatus(StatusCodes.OK);
 }
 
+async function googleLogon(req, res) {
+  try {
+    const { code } = req.body;
+
+    // 1. Exchange the frontend 'code' for tokens
+    const { tokens } = await client.getToken(code);
+
+    // 2. Verify the ID Token to get the user's Google Profile
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const { sub, email, name, picture } = ticket.getPayload();
+
+    let newUser = { name, email, password: sub };
+
+    newUser.password += "Pepito7%";
+
+    const { error, value } = userSchema.validate(newUser, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: error.message,
+        name: newUser.name,
+        email: newUser.email,
+      });
+    }
+    newUser = value;
+    newUser.password = await hashPassword(newUser.password);
+
+    // 1. Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true },
+    });
+
+    if (existingUser) {
+      // LOGIN CASE: Just set the cookie and return 200
+      const csrfToken = setJwtCookie(req, res, existingUser);
+      return res.status(200).json({
+        ...existingUser,
+        csrfToken,
+      });
+    }
+    // 2. REGISTER CASE: Run your existing transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const newUserResult = await tx.user.create({
+        data: {
+          email: email,
+          name: name,
+          hashedPassword: newUser.password,
+        },
+        select: { id: true, email: true, name: true },
+      });
+
+      const welcomeTaskData = [
+        {
+          title: "Complete your profile",
+          userId: newUserResult.id,
+          priority: "medium",
+        },
+        {
+          title: "Add your first task",
+          userId: newUserResult.id,
+          priority: "high",
+        },
+        { title: "Explore the app", userId: newUserResult.id, priority: "low" },
+      ];
+
+      await tx.task.createMany({ data: welcomeTaskData });
+
+      const welcomeTasks = await tx.task.findMany({
+        where: { userId: newUserResult.id },
+      });
+
+      return { user: newUserResult, welcomeTasks };
+    });
+
+    const csrfToken = setJwtCookie(req, res, result.user);
+
+    return res.status(201).json({
+      user: result.user,
+      welcomeTasks: result.welcomeTasks,
+      csrfToken,
+    });
+  } catch (error) {
+    console.error("Google Logon Error:", error);
+    return res.status(401).json({ message: "Authentication failed" });
+  }
+}
+
 async function show(req, res) {
   const userId = parseInt(req.params.id);
 
@@ -235,4 +334,4 @@ async function show(req, res) {
   res.status(200).json(user);
 }
 
-module.exports = { register, logon, logoff, show };
+module.exports = { register, logon, logoff, show, googleLogon };

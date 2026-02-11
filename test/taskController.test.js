@@ -10,6 +10,7 @@ const {
   create,
   update,
   deleteTask,
+  updateMany,
 } = require("../controllers/taskController");
 
 // a few useful globals
@@ -208,4 +209,37 @@ it("32. Retrieving user1's tasks now returns a 404.", async () => {
   saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
   await waitForRouteHandlerCompletion(show, req, saveRes);
   expect(saveRes.statusCode).toBe(404);
+});
+let taskIdsUser1 = [];
+
+it("33. Setup: Create multiple tasks for user1 to test updateMany", async () => {
+  const t1 = await prisma.Task.create({
+    data: { title: "Task A", userId: user1.id },
+  });
+  const t2 = await prisma.Task.create({
+    data: { title: "Task B", userId: user1.id },
+  });
+  taskIdsUser1 = [t1.id, t2.id];
+  expect(taskIdsUser1.length).toBe(2);
+});
+it("34. User1 can update multiple tasks at once", async () => {
+  const req = httpMocks.createRequest({
+    method: "PATCH",
+    body: {
+      data: [
+        { id: taskIdsUser1[0], title: "Updated Title A", isCompleted: true },
+        { id: taskIdsUser1[1], priority: "high" },
+      ],
+    },
+  });
+  req.user = { id: user1.id };
+  saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
+
+  await waitForRouteHandlerCompletion(updateMany, req, saveRes);
+
+  const data = saveRes._getJSONData();
+  expect(saveRes.statusCode).toBe(200);
+  expect(Array.isArray(data)).toBe(true);
+  expect(data.length).toBe(2);
+  expect(data[0].title).toBe("Updated Title A");
 });

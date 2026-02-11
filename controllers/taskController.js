@@ -1,4 +1,8 @@
-const { taskSchema, patchTaskSchema } = require("./../validation/taskSchema");
+const {
+  taskSchema,
+  patchTaskSchema,
+  arrayTaskSchema,
+} = require("./../validation/taskSchema");
 const { StatusCodes } = require("http-status-codes");
 const { paginationSchema } = require("../validation/userSchema");
 const prisma = require("./../db/prisma");
@@ -195,6 +199,50 @@ async function update(req, res, next) {
     }
   }
 }
+async function updateMany(req, res, next) {
+  if (!req.body?.data) {
+    return res.status(400).json({ message: "The Tasks were not found." });
+  }
+  if (!req.body.data.length) {
+    return res.status(400).json({ message: "There're no tasks in the body" });
+  }
+  const { error, value } = arrayTaskSchema.validate(req.body.data, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: error.message,
+    });
+  }
+
+  try {
+    const updatedTasks = await prisma.$transaction(
+      value.map((taskItem) =>
+        prisma.task.update({
+          where: {
+            id_userId: {
+              id: taskItem.id,
+              userId: parseInt(req.user.id),
+            },
+          },
+          data: {
+            title: taskItem.title,
+            isCompleted: taskItem.isCompleted,
+            priority: taskItem.priority,
+          },
+          select: { title: true, isCompleted: true, id: true, priority: true },
+        }),
+      ),
+    );
+    res.status(200).json(updatedTasks);
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "The task was not found." });
+    } else {
+      return next(err); // pass other errors to the global error handler
+    }
+  }
+}
 async function deleteTask(req, res, next) {
   const taskToFind = parseInt(req.params?.id); // if there are no params, the ? makes sure that you
   // get a null
@@ -269,4 +317,12 @@ async function bulkCreate(req, res, next) {
   }
 }
 
-module.exports = { create, index, show, update, deleteTask, bulkCreate };
+module.exports = {
+  create,
+  index,
+  show,
+  update,
+  deleteTask,
+  bulkCreate,
+  updateMany,
+};
